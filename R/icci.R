@@ -1,14 +1,16 @@
 #' Information Criteria Confidence Intervals
 #'
-#' \code{icci} calculates confidence intervals of BIC.
-#' Functionality is available for models of classes
-#' lm, glm, glm.nb, clm, hurdle, zeroinfl, mlogit, nls, polr, rlm,
-#' and lavaan.
+#' Calculate confidence intervals of AIC and BIC.
+#'
+#' Functionality is currently available for models of classes
+#' \code{lm}, \code{glm}, \code{glm.nb}, \code{clm}, \code{hurdle}, \code{zeroinfl}, \code{mlogit}, \code{nls}, \code{polr}, \code{rlm}, and \code{lavaan}.
 #'
 #' Users should take care to ensure that the two models have
 #' the same dependent variable (or, for lavaan objects, identical
 #' modeled variables), with observations ordered identically within
-#' each model object.
+#' each model object.  Assuming the same data matrix is used to fit each model,
+#' observation ordering should generally be identical.  There are currently
+#' no checks for this, however.
 #'
 #' @param object1 a model object
 #' @param object2 a model object
@@ -26,6 +28,7 @@
 #'
 #' @examples
 #' \dontrun{
+#' ## Count regression comparisons
 #' require(MASS)
 #' house1 <- glm(Freq ~ Infl + Type + Cont, family=poisson, data=housing)
 #' house2 <- glm(Freq ~ Infl + Sat, family=poisson, data=housing)
@@ -33,6 +36,7 @@
 #' ## CI for BIC
 #' icci(house2, house1)
 #'
+#' ## Further comparisons to hurdle, zero-inflated models
 #' require(pscl)
 #' bio1 <- glm(art ~ fem + mar + phd + ment, family=poisson, data=bioChemists)
 #' bio2 <- hurdle(art ~ fem + mar + phd + ment, data=bioChemists)
@@ -40,14 +44,15 @@
 #' icci(bio2, bio1)
 #' icci(bio3, bio1)
 #' icci(bio3, bio2)
-
+#'
+#' ## Latent variable model comparisons
 #' require(lavaan)
 #' HS.model <- 'visual  =~ x1 + x2 + x3
 #'               textual =~ x4 + x5 + x6
 #'               speed   =~ x7 + x8 + x9 '
 #' fit1 <- cfa(HS.model, data=HolzingerSwineford1939)
 #' fit2 <- cfa(HS.model, data=HolzingerSwineford1939, group="school")
-#' icci(fit1, fit2, 0.05)
+#' icci(fit1, fit2)
 #' }
 #'
 #' @export
@@ -60,11 +65,11 @@ icci <- function(object1, object2, conf.level=.95) {
   llA <- llcont(object1)
   llB <- llcont(object2)
 
-  if (!isTRUE(all.equal(sum(llA), as.numeric(logLik(object1)))))
-    stop("The individual log-likelihoods do not sum up to the log-likelihood. Please report your model and object to the maintainer.")
+  ## if (!isTRUE(all.equal(sum(llA), as.numeric(logLik(object1)))))
+  ##   stop("The individual log-likelihoods do not sum up to the log-likelihood. Please report your model and object to the maintainer.")
 
-  if (!isTRUE(all.equal(sum(llB), as.numeric(logLik(object2)))))
-    stop("The individual log-likelihoods do not sum up to the log-likelihood. Please report your model and object to the maintainer.")
+  ## if (!isTRUE(all.equal(sum(llB), as.numeric(logLik(object2)))))
+  ##   stop("The individual log-likelihoods do not sum up to the log-likelihood. Please report your model and object to the maintainer.")
 
   ## Eq (4.2)
   n <- NROW(llA)

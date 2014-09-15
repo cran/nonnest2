@@ -1,14 +1,20 @@
 #' Vuong Tests for Model Comparison
 #'
-#' \code{vuongtest} formally tests pairs of models using theory provided
-#' by Vuong (1989).  Functionality is available for models of classes
-#' lm, glm, glm.nb, clm, hurdle, zeroinfl, mlogit, nls, polr, rlm,
-#' and lavaan.
+#' Test pairs of non-nested models using Vuong's (1989) theory.  This includes
+#' a test of model distinguishability and a test of model fit.
+#'
+#' For non-nested models, the test of distinguishability indicates whether or
+#' not the models can possibly be distinguished on the basis of the observed
+#' data.  The LRT then indicates whether or not one model fits better
+#' than another.
 #'
 #' Users should take care to ensure that the two models have
 #' the same dependent variable (or, for lavaan objects, identical
 #' modeled variables), with observations ordered identically within
-#' each model object.
+#' each model object.  Assuming the same data matrix is used to fit each model,
+#' observation ordering should generally be identical.  There are currently
+#' no checks for this, however.
+#'
 #'
 #' @param object1 a model object
 #' @param object2 a model object
@@ -25,6 +31,7 @@
 #'
 #' @examples
 #' \dontrun{
+#' ## Count regression comparisons
 #' require(MASS)
 #' house1 <- glm(Freq ~ Infl + Type + Cont, family=poisson, data=housing)
 #' house2 <- glm(Freq ~ Infl + Sat, family=poisson, data=housing)
@@ -49,7 +56,7 @@
 #' vuongtest(bio1, bio2)
 #' vuongtest(bio1, bio3)
 #' vuongtest(bio3, bio2)
-
+#'
 #' ## Application to latent variable models
 #' require(lavaan)
 #' HS.model <- 'visual  =~ x1 + x2 + x3
@@ -72,11 +79,11 @@ vuongtest <- function(object1, object2) {
   llA <- llcont(object1)
   llB <- llcont(object2)
 
-  if (!isTRUE(all.equal(sum(llA), as.numeric(logLik(object1)))))
-    stop("The individual log-likelihoods do not sum up to the log-likelihood. Please report your model and object to the maintainer.")
+  ## if (!isTRUE(all.equal(sum(llA), as.numeric(logLik(object1)))))
+  ##   stop("The individual log-likelihoods do not sum up to the log-likelihood. Please report your model and object to the maintainer.")
 
-  if (!isTRUE(all.equal(sum(llB), as.numeric(logLik(object2)))))
-    stop("The individual log-likelihoods do not sum up to the log-likelihood. Please report your model and object to the maintainer.")
+  ## if (!isTRUE(all.equal(sum(llB), as.numeric(logLik(object2)))))
+  ##   stop("The individual log-likelihoods do not sum up to the log-likelihood. Please report your model and object to the maintainer.")
 
   ## Eq (4.2)
   n <- NROW(llA)
@@ -187,6 +194,6 @@ print.vuongtest <- function(x, ...) {
 
 
 .onAttach <- function(...) {
-  packageStartupMessage("  This is nonnest2 0.1
+  packageStartupMessage("  This is nonnest2 0.1-1
   nonnest2 is BETA software! Please report any bugs.")
 }
