@@ -1,6 +1,6 @@
 #' Information Criteria Confidence Intervals
 #'
-#' Calculate confidence intervals of AIC and BIC.
+#' Calculate confidence intervals of AIC and BIC for non-nested models.
 #'
 #' Functionality is currently available for models of classes
 #' \code{lm}, \code{glm}, \code{glm.nb}, \code{clm}, \code{hurdle}, \code{zeroinfl}, \code{mlogit}, \code{nls}, \code{polr}, \code{rlm}, and \code{lavaan}.
@@ -11,6 +11,10 @@
 #' each model object.  Assuming the same data matrix is used to fit each model,
 #' observation ordering should generally be identical.  There are currently
 #' no checks for this, however.
+#'
+#' Note: if models are nested or if the "variance test" from
+#' \code{vuongtest()} indicates models are indistinguishable, then the
+#' intervals returned from \code{icci()} will be incorrect.
 #'
 #' @param object1 a model object
 #' @param object2 a model object
@@ -65,38 +69,17 @@ icci <- function(object1, object2, conf.level=.95) {
   llA <- llcont(object1)
   llB <- llcont(object2)
 
-  ## if (!isTRUE(all.equal(sum(llA), as.numeric(logLik(object1)))))
-  ##   stop("The individual log-likelihoods do not sum up to the log-likelihood. Please report your model and object to the maintainer.")
-
-  ## if (!isTRUE(all.equal(sum(llB), as.numeric(logLik(object2)))))
-  ##   stop("The individual log-likelihoods do not sum up to the log-likelihood. Please report your model and object to the maintainer.")
-
   ## Eq (4.2)
   n <- NROW(llA)
   omega.hat.2 <- (n-1)/n * var(llA - llB)
 
-  bicA <- BIC(object1)
-  bicB <- BIC(object2)
+  ## BIC is computed like this because hurdle, zeroinfl, mlogit
+  ## don't have an nobs() method
+  bicA <- AIC(object1, k = log(NROW(estfun(object1))))
+  bicB <- AIC(object2, k = log(NROW(estfun(object2))))
 
   aicA <- AIC(object1)
   aicB <- AIC(object2)
-
-  ## Interval for BIC differences
-  ## if (classA %in% c("hurdle", "zeroinfl", "mlogit")) {
-  ##   lls <- logLik(object1)
-  ##   nos <- length(fitted(object1))
-  ##   bicA <- -2 * as.numeric(lls) + log(nos) * attr(lls, "df")
-  ## } else {
-  ##   bicA <- BIC(object1)
-  ## }
-
-  ## if (classB %in% c("hurdle", "zeroinfl", "mlogit")) {
-  ##   lls <- logLik(object2)
-  ##   nos <- length(fitted(object2))
-  ##   bicB <- -2 * as.numeric(lls) + log(nos) * attr(lls, "df")
-  ## } else {
-  ##   bicB <- BIC(object2)
-  ## }
 
   bicdiff <- bicA - bicB
   aicdiff <- aicA - aicB
@@ -126,31 +109,22 @@ icci <- function(object1, object2, conf.level=.95) {
 print.icci <- function(x, ...) {
   cat("\nModel 1 \n")
   cat(" Class:", x$class$class1, "\n")
-  cat(" Call:", deparse(x$call$call1), fill=TRUE)
+  cat(" Call:", deparse(x$call$call1, nlines=1), fill=TRUE)
   cat(" AIC:", formatC(x$AIC$AIC1, digits=3L, format="f"), "\n")
   cat(" BIC:", formatC(x$BIC$BIC1, digits=3L, format="f"), "\n")
   cat("Model 2 \n")
   cat(" Class:", x$class$class2, "\n")
-  cat(" Call:", deparse(x$call$call2), "\n", fill=TRUE)
+  cat(" Call:", deparse(x$call$call2, nlines=1), "\n", fill=TRUE)
   cat(" AIC:", formatC(x$AIC$AIC2, digits=3L, format="f"), "\n")
   cat(" BIC:", formatC(x$BIC$BIC2, digits=3L, format="f"), "\n\n")
 
-  if (any(c(x$class$class1, x$class$class2) %in% c("hurdle", "zeroinfl", "mlogit"))) {
-    warning("\n Currently, BIC cannot be calculated for the objects of hurdle, zeroinfl and mlogit.", call.=FALSE)
+  cat(x$confLevel * 100,
+      "% Confidence Interval of AIC difference (AICdiff = AIC1 - AIC2) \n", sep="")
+  cat("  ", formatC(x$AICci[1], digits=3L, format="f"), " < ", "AICdiff",
+      " < ", formatC(x$AICci[2], digits=3L, format="f"), "\n\n", sep="")
 
-    cat(x$confLevel * 100,
-        "% Confidence Interval of AIC difference (AICdiff = AIC1 - AIC2) \n", sep="")
-    cat("  ", formatC(x$AICci[1], digits=3L, format="f"), " < ", "AICdiff",
-        " < ", formatC(x$AICci[2], digits=3L, format="f"), "\n", sep="")
-  } else {
-    cat(x$confLevel * 100,
-        "% Confidence Interval of AIC difference (AICdiff = AIC1 - AIC2) \n", sep="")
-    cat("  ", formatC(x$AICci[1], digits=3L, format="f"), " < ", "AICdiff",
-        " < ", formatC(x$AICci[2], digits=3L, format="f"), "\n\n", sep="")
-
-    cat(x$confLevel * 100,
-        "% Confidence Interval of BIC difference (BICdiff = BIC1 - BIC2) \n", sep="")
-    cat("  ", formatC(x$BICci[1], digits=3L, format="f"), " < ", "BICdiff",
-        " < ", formatC(x$BICci[2], digits=3L, format="f"), "\n", sep="")
-  }
+  cat(x$confLevel * 100,
+      "% Confidence Interval of BIC difference (BICdiff = BIC1 - BIC2) \n", sep="")
+  cat("  ", formatC(x$BICci[1], digits=3L, format="f"), " < ", "BICdiff",
+      " < ", formatC(x$BICci[2], digits=3L, format="f"), "\n", sep="")
 }

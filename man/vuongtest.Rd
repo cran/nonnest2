@@ -3,18 +3,22 @@
 \alias{vuongtest}
 \title{Vuong Tests for Model Comparison}
 \usage{
-vuongtest(object1, object2)
+vuongtest(object1, object2, nested = FALSE, adj = "none")
 }
 \arguments{
 \item{object1}{a model object}
 
 \item{object2}{a model object}
+
+\item{nested}{if \code{TRUE}, models are assumed to be nested}
+
+\item{adj}{Should an adjusted test statistic be calculated?  Defaults to \dQuote{none}, with possible adjustments being \dQuote{aic} and \dQuote{bic}}
 }
 \value{
 an object of class \code{vuongtest} containing test results.
 }
 \description{
-Test pairs of non-nested models using Vuong's (1989) theory.  This includes
+Test pairs of models using Vuong's (1989) theory.  This includes
 a test of model distinguishability and a test of model fit.
 }
 \details{
@@ -22,6 +26,10 @@ For non-nested models, the test of distinguishability indicates whether or
 not the models can possibly be distinguished on the basis of the observed
 data.  The LRT then indicates whether or not one model fits better
 than another.
+
+For nested models (\code{nested=TRUE}), both tests serve as robust
+alternatives to the classical likelihood ratio tests.  In this case,
+the \code{adj} argument is ignored.
 
 Users should take care to ensure that the two models have
 the same dependent variable (or, for lavaan objects, identical
@@ -39,7 +47,7 @@ house2 <- glm(Freq ~ Infl + Sat, family=poisson, data=housing)
 house3 <- glm(Freq ~ Infl, family=poisson, data=housing)
 ## house3 is nested within house1 and house2
 anova(house3, house1, test="Chisq")
-anova(house2, house1, test="Chisq")
+anova(house3, house2, test="Chisq")
 
 ## house 2 is not nested in house1, so this test is invalid
 anova(house2, house1, test="Chisq")

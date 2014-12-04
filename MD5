@@ -1,8 +1,10 @@
-adf2356598452e3e6c63014c4ef1c641 *DESCRIPTION
+27ecdda750659d364d9ec0e5bdaca52e *DESCRIPTION
 c06cc9c82262b6764e521a16a0edf33d *NAMESPACE
-70bad646b8ed2b4a211b0fe6bd3831fa *R/icci.R
+8f7600105b1dd3d5c42310f5aea69c3f *NEWS
+64bbfc78a132c608e45048f2760b4ccf *R/icci.R
 ccd48f7d87db784b0287e55be327a1ac *R/llcont.R
-b363d715b67da0578c529171230a6c3c *R/vuongtest.R
-16bde3ef5851a64a54632edd581f9702 *man/icci.Rd
+db824e7d82170878ad7e105ead0adb0c *R/vuongtest.R
+797c8c53cffe5114a40024fde0cbef61 *README
+a4cb03a1f8075b5a97e5c054ee9254ff *man/icci.Rd
 9ddc20a0c80863bda7bddd5539af22d7 *man/llcont.Rd
-dffbfd26c8986094f564e53e8c74fffd *man/vuongtest.Rd
+7efd4a0a5a30d8c6c3d6466895b65207 *man/vuongtest.Rd
