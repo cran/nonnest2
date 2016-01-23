@@ -1,3 +1,14 @@
+Changes in Version 0.3
+
+    o Added "Getting started" vignette.
+
+    o Changes to conform to lavaan 0.5-20's handling of equality constraints
+
+    o Fixed issue where print methods sometimes wrapped over lines.
+
+    o Fixed bug in llcont() for lavaan cases missing all data except
+      one variable.
+
 Changes in Version 0.2
 
     o Added argument "nested" to vuongtest(), allowing the user

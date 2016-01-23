@@ -5,7 +5,7 @@
 #' This is a S3 generic function.
 #' Currently, the method is defined for \code{lm}, \code{glm}, \code{glm.nb},
 #' \code{clm}, \code{hurdle}, \code{zeroinfl}, \code{mlogit}, \code{nls},
-#' \code{polr}, \code{rlm}, and \code{lavaan} objects.
+#' \code{polr}, \code{rlm}, \code{lavaan} objects.
 #'
 #' @param x a model object
 #' @param \dots arguments passed to specific methods
@@ -23,6 +23,10 @@
 #' logLik(gam1)
 #'
 #' @importFrom mvtnorm dmvnorm
+#' @importFrom stats dbinom dgamma dnbinom dnorm dpois
+#' @importFrom stats model.frame model.matrix model.response model.weights
+#' @importFrom stats weights deviance logLik
+#'
 #' @export
 llcont <- function(x, ...) UseMethod("llcont")
 
@@ -429,7 +433,12 @@ llcont.lavaan <- function(x, ...){
         X <- M[[p]][["X"]]
         var.idx <- M[[p]][["var.idx"]]
 
-        tmpll[pat.idx==p] <- dmvnorm(X, Mu.hat[var.idx], Sigma.hat[var.idx, var.idx], log=TRUE)
+        ## avoid fail for one observed variable
+        if(sum(var.idx) == 1){
+          tmpll[pat.idx==p] <- dnorm(X, Mu.hat[var.idx], sqrt(Sigma.hat[var.idx,var.idx]), log=TRUE)
+        } else {
+          tmpll[pat.idx==p] <- dmvnorm(X, Mu.hat[var.idx], Sigma.hat[var.idx, var.idx], log=TRUE)
+        }
       }
 
       llvec[grpind] <- tmpll
@@ -437,3 +446,11 @@ llcont.lavaan <- function(x, ...){
   } # group
   llvec
 }
+
+########################################################################
+## individual log-likelihood of SingleGroupClass objects (mirt function)
+########################################################################
+##llcont.SingleGroupClass <- function(x, ...)
+##{
+##  sum(x@Data$Freq[[1L]] * log(x@Pl))
+##}

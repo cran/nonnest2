@@ -75,6 +75,8 @@
 #'
 #' @importFrom sandwich estfun
 #' @importFrom CompQuadForm imhof
+#' @importFrom stats coef pnorm var vcov
+#' @importMethodsFrom lavaan coef fitted logLik vcov
 #' @export
 vuongtest <- function(object1, object2, nested=FALSE, adj="none") {
   classA <- class(object1)[1L]
@@ -105,19 +107,22 @@ vuongtest <- function(object1, object2, nested=FALSE, adj="none") {
 
   ## Get p-value of weighted chi-square dist
   lamstar <- calcLambda(object1, object2, n)
+
   ## Note: dr package requires non-negative weights, which
   ##       does not help when nested==TRUE
   ## tmp <- dr.pvalue(lamstar2, n * omega.hat.2)
   ## pOmega <- tmp[[4]]
-  pOmega <- imhof(n * omega.hat.2, lamstar^2)[[1]]
+  pOmega <- imhof(n * omega.hat.2, lamstar^2)$Qq
 
   ## Calculate and test LRT; Eq (6.4)
   lr <- sum(llA - llB)
   teststat <- (1/sqrt(n)) * lr/sqrt(omega.hat.2)
 
   ## Adjustments to test statistics
+  ## FIXME lavaan equality constraints; use df instead?
   if(adj=="aic"){
-    teststat <- teststat - (length(coef(object1)) - length(coef(object2)))
+    teststat <- teststat - (length(coef(object1)) -
+                              length(coef(object2)))
   }
   if(adj=="bic"){
     teststat <- teststat -
@@ -163,10 +168,31 @@ vuongtest <- function(object1, object2, nested=FALSE, adj="none") {
 ################################################################
 calcAB <- function(object, n){
   ## Eq (2.1)
-  A <- chol2inv(chol(n * vcov(object)))
+  if(class(object) == "lavaan"){
+    tmpvc <- vcov(object)
+    dups <- duplicated(colnames(tmpvc))
+    tmpvc <- tmpvc[!dups,!dups]
+    ## to throw error if complex constraints
+    ## (NB we should eventually just use this instead of dups)
+    if(nrow(object@Model@ceq.JAC) > 0){
+      vcerr <- vcov(object, remove.duplicated=TRUE)
+    }
+    #if(nrow(object@Model@ceq.JAC) > 0){
+    #  A <- vcov(object, remove.duplicated=TRUE)
+    #} else {
+    #  A <- vcov(object)
+    #}
+  } else {
+    tmpvc <- vcov(object)
+  }
+  A <- chol2inv(chol(n * tmpvc))
 
   ## Eq (2.2)
-  sc <- estfun(object)
+  if(class(object) == "lavaan"){
+    sc <- estfun(object, remove.duplicated=TRUE)
+  } else {
+    sc <- estfun(object)
+  }
   sc.cp <- crossprod(sc)/n
   B <- matrix(sc.cp, nrow(A), nrow(A))
 
@@ -207,37 +233,38 @@ calcLambda <- function(object1, object2, n) {
 print.vuongtest <- function(x, ...) {
   cat("\nModel 1 \n")
   cat(" Class:", x$class$class1, "\n")
-  cat(" Call:", deparse(x$call$call1, nlines=1), "\n\n")
-  cat("Model 2 \n")
+  model1call <- deparse(x$call$call1)
+  cat(" Call: ", model1call[1], if (length(model1call) > 1) "...\n" else "\n", sep="")
+  cat("\nModel 2 \n")
   cat(" Class:", x$class$class2, "\n")
-  cat(" Call:", deparse(x$call$call2, nlines=1), "\n\n\n")
+  model2call <- deparse(x$call$call2)
+  cat(" Call: ", model2call[1], if (length(model2call) > 1) "...\n" else "\n", sep="")
 
-  cat("Variance test \n")
+  cat("\nVariance test \n")
   cat("  H0: Model 1 and Model 2 are indistinguishable", "\n")
   cat("  H1: Model 1 and Model 2 are distinguishable", "\n")
-  cat("  w2 = ", formatC(x$omega, digits=3L, format="f"), ",   ",
+  cat("    w2 = ", formatC(x$omega, digits=3L, format="f"), ",   ",
       "p = ", format.pval(x$p_omega, digits=3L), "\n\n", sep="")
 
   if(x$nested){
       cat("Robust likelihood ratio test of distinguishable models \n")
       cat("  H0: Model 2 fits as well as Model 1 \n")
       cat("  H1: Model 1 fits better than Model 2 \n")
-      cat("  LR = ", formatC(x$LRTstat, digits=3L, format="f"), ",   ",
+      cat("    LR = ", formatC(x$LRTstat, digits=3L, format="f"), ",   ",
           "p = ", format.pval(x$p_LRT[[1]], digits=3L), "\n", sep="")
   } else {
       cat("Non-nested likelihood ratio test \n")
       cat("  H0: Model fits are equal for the focal population \n")
       cat("  H1A: Model 1 fits better than Model 2 \n")
-      cat("  z = ", formatC(x$LRTstat, digits=3L, format="f"), ",   ",
+      cat("    z = ", formatC(x$LRTstat, digits=3L, format="f"), ",   ",
           "p = ", format.pval(x$p_LRT[[1]], digits=3L), "\n", sep="")
       cat("  H1B: Model 2 fits better than Model 1 \n")
-      cat("  z = ", formatC(x$LRTstat, digits=3L, format="f"), ",   ",
+      cat("    z = ", formatC(x$LRTstat, digits=3L, format="f"), ",   ",
           "p = ", format.pval(x$p_LRT[[2]], digits=4L), "\n", sep="")
   }
 }
 
 
 .onAttach <- function(...) {
-  packageStartupMessage("  This is nonnest2 0.2
-  nonnest2 is BETA software! Please report any bugs.")
+  packageStartupMessage("This is nonnest2 0.3\n nonnest2 has not been tested with all combinations of models.")
 }
