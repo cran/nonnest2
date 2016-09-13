@@ -26,6 +26,7 @@
 #' @importFrom stats dbinom dgamma dnbinom dnorm dpois
 #' @importFrom stats model.frame model.matrix model.response model.weights
 #' @importFrom stats weights deviance logLik
+#' @importFrom lavaan lavInspect
 #'
 #' @export
 llcont <- function(x, ...) UseMethod("llcont")
@@ -391,24 +392,26 @@ llcont.rlm <- function (x, ...) {
 #' @export
 llcont.lavaan <- function(x, ...){
   ## make sure this is multivariate normal likelihood
-  if (x@Options$estimator != "ML"){
-      stop("llcont() only works for lavaan models fit under multivariate normality.")
+  if (lavInspect(x, "options")$estimator != "ML" |
+      lavInspect(x, "options")$se != "standard"){
+      stop("nonnest2 only works for lavaan models fit via ML\n  (assuming multivariate normality, with no robust SEs).")
   }
   samplestats <- x@SampleStats
-  ntab <- unlist(samplestats@nobs)
-  llvec <- rep(NA, samplestats@ntotal)
+  ntab <- lavInspect(x, "nobs")
+  llvec <- rep(NA, lavInspect(x, "ntotal"))
+  ngroups <- lavInspect(x, "ngroups")
 
-  for(g in 1:samplestats@ngroups) {
-    if (samplestats@ngroups > 1){
+  for(g in 1:ngroups) {
+    if (ngroups > 1){
       moments <- fitted(x)[[g]]
+      grpind <- lavInspect(x, "case.idx")[[g]]
     } else {
       moments <- fitted(x)
+      grpind <- lavInspect(x, "case.idx")
     }
     Sigma.hat <- unclass(moments$cov)
     ## To ensure it is symmetric; needed?
     Sigma.hat <- (Sigma.hat + t(Sigma.hat))/2
-    ## Which cases correspond to this group?
-    grpind <- x@Data@case.idx[[g]]
 
     if(!samplestats@missing.flag) { # complete data
       if(x@Model@meanstructure) { # mean structure
@@ -421,23 +424,23 @@ llcont.lavaan <- function(x, ...){
     } else { # incomplete data
       nsub <- ntab[g]
       M <- samplestats@missing[[g]]
-      MP1 <- x@Data@Mp[[g]]
-      pat.idx <- match(MP1$id, MP1$order)
+      Mp <- x@Data@Mp[[g]]
       tmpll <- rep(NA, nsub)
 
       Mu.hat <- unclass(moments$mean)
-      nvar <- ncol(samplestats@cov[[g]])
+      nvar <- ncol(moments$cov)
 
       for(p in 1:length(M)) {
         ## Data
-        X <- M[[p]][["X"]]
+        case.idx <- Mp$case.idx[[p]]
         var.idx <- M[[p]][["var.idx"]]
+        X <- x@Data@X[[g]][case.idx, var.idx, drop = FALSE]
 
         ## avoid fail for one observed variable
         if(sum(var.idx) == 1){
-          tmpll[pat.idx==p] <- dnorm(X, Mu.hat[var.idx], sqrt(Sigma.hat[var.idx,var.idx]), log=TRUE)
+          tmpll[case.idx] <- dnorm(X, Mu.hat[var.idx], sqrt(Sigma.hat[var.idx,var.idx]), log=TRUE)
         } else {
-          tmpll[pat.idx==p] <- dmvnorm(X, Mu.hat[var.idx], Sigma.hat[var.idx, var.idx], log=TRUE)
+          tmpll[case.idx] <- dmvnorm(X, Mu.hat[var.idx], Sigma.hat[var.idx, var.idx], log=TRUE)
         }
       }
 
