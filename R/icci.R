@@ -62,25 +62,37 @@
 #' @importFrom stats AIC var qnorm
 #' @export
 icci <- function(object1, object2, conf.level=.95) {
-  classA <- class(object1)[1L]
-  classB <- class(object2)[1L]
-  callA <- if (isS4(object1)) object1@call else object1$call
-  callB <- if (isS4(object2)) object2@call else object2$call
 
+  ## check objects, issue warnings/errors, get classes/calls
+  obinfo <- check.obj(object1, object2)
+  callA <- obinfo$callA; classA <- obinfo$classA
+  callB <- obinfo$callB; classB <- obinfo$classB
+  
   llA <- llcont(object1)
   llB <- llcont(object2)
 
   ## Eq (4.2)
-  n <- NROW(llA)
-  omega.hat.2 <- (n-1)/n * var(llA - llB)
+  nmis <- sum(is.na(llA)) # (missing all data)
+  n <- NROW(llA) - nmis
+  omega.hat.2 <- (n-1)/n * var(llA - llB, na.rm = TRUE)
 
-  ## BIC is computed like this because hurdle, zeroinfl, mlogit
-  ## don't have an nobs() method
-  bicA <- AIC(object1, k = log(NROW(estfun(object1))))
-  bicB <- AIC(object2, k = log(NROW(estfun(object2))))
+  if(classA %in% c("SingleGroupClass", "MultipleGroupClass")){
+    bicA <- mirt::extract.mirt(object1, "BIC")
+    aicA <- mirt::extract.mirt(object1, "AIC")
+  } else {
+    ## BIC is computed like this because hurdle, zeroinfl, mlogit
+    ## don't have an nobs() method
+    bicA <- AIC(object1, k = log(NROW(estfun(object1))))
+    aicA <- AIC(object1)
+  }
 
-  aicA <- AIC(object1)
-  aicB <- AIC(object2)
+  if(classB %in% c("SingleGroupClass", "MultipleGroupClass")){
+    bicB <- mirt::extract.mirt(object2, "BIC")
+    aicB <- mirt::extract.mirt(object2, "AIC")
+  } else {
+    bicB <- AIC(object2, k = log(NROW(estfun(object2))))
+    aicB <- AIC(object2)
+  }
 
   bicdiff <- bicA - bicB
   aicdiff <- aicA - aicB

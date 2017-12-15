@@ -5,11 +5,13 @@
 #' This is a S3 generic function.
 #' Currently, the method is defined for \code{lm}, \code{glm}, \code{glm.nb},
 #' \code{clm}, \code{hurdle}, \code{zeroinfl}, \code{mlogit}, \code{nls},
-#' \code{polr}, \code{rlm}, \code{lavaan} objects.
+#' \code{polr}, \code{rlm}, \code{lavaan}, \code{vglm}, and \code{mirt} objects.
 #'
 #' @param x a model object
 #' @param \dots arguments passed to specific methods
 #'
+#' @author Ed Merkle, Dongjun You, and Lennart Schneider
+#' 
 #' @return An object of class \code{numeric} containing individuals' contributions to the log-likelihood.  The sum of these contributions equals the model log-likelihood.
 #'
 #' @examples
@@ -396,6 +398,15 @@ llcont.lavaan <- function(x, ...){
       lavInspect(x, "options")$se != "standard"){
       stop("nonnest2 only works for lavaan models fit via ML\n  (assuming multivariate normality, with no robust SEs).")
   }
+  mispatts <- lavInspect(x, "patterns")
+  if(any(class(mispatts) == "list")){
+    npatts <- max(sapply(mispatts, nrow))
+  } else {
+    npatts <- nrow(mispatts)
+  }
+  if (lavInspect(x, "options")$missing != "ml" & npatts > 1){
+      stop("nonnest2 does not work with pairwise/listwise deletion.\n  refit the model with missing='ml'.")
+  }
   samplestats <- x@SampleStats
   ntab <- lavInspect(x, "nobs")
   llvec <- rep(NA, lavInspect(x, "ntotal"))
@@ -450,10 +461,36 @@ llcont.lavaan <- function(x, ...){
   llvec
 }
 
+################################################################
+## Getting log-likelihood of vglm objects for individual cases
+################################################################
+#' @export
+llcont.vglm <- function(x, ...){
+  logLik(x, summation = FALSE)
+}
+
 ########################################################################
-## individual log-likelihood of SingleGroupClass objects (mirt function)
+## individual log-likelihood of MultipleGroupClass objects (mirt function)
 ########################################################################
-##llcont.SingleGroupClass <- function(x, ...)
-##{
-##  sum(x@Data$Freq[[1L]] * log(x@Pl))
-##}
+#' @export
+llcont.MultipleGroupClass <- function(x, ...) {
+  dat <- apply(x@Data$data, 1, paste, collapse = "")
+  tab <- apply(x@Data$tabdata, 1, paste, collapse = "")
+  ind <- match(dat, tab)
+  g  <- x@Data$group
+  gN <- x@Data$groupNames
+  llcont <- numeric(length(g))
+  for(a in seq_along(gN)) {
+    llcont[g == gN[a]] <- log(x@Internals$Pl[[a]][ind[g == gN[[a]]]])
+  }
+  return(llcont)
+}
+
+#' @export
+llcont.SingleGroupClass <- function(x, ...) {
+  dat <- apply(x@Data$data, 1, paste, collapse = "")
+  tab <- apply(x@Data$tabdata, 1, paste, collapse = "")
+  ind <- match(dat, tab)
+  llcont <- log(x@Internals$Pl[ind])
+  return(llcont)
+}

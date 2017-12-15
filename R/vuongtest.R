@@ -79,11 +79,12 @@
 #' @importMethodsFrom lavaan coef fitted logLik vcov
 #' @export
 vuongtest <- function(object1, object2, nested=FALSE, adj="none") {
-  classA <- class(object1)[1L]
-  classB <- class(object2)[1L]
-  callA <- if (isS4(object1)) object1@call else object1$call
-  callB <- if (isS4(object2)) object2@call else object2$call
 
+  ## check objects, issue warnings/errors, get classes/calls
+  obinfo <- check.obj(object1, object2)
+  callA <- obinfo$callA; classA <- obinfo$classA
+  callB <- obinfo$callB; classB <- obinfo$classB
+    
   llA <- llcont(object1)
   llB <- llcont(object2)
 
@@ -91,19 +92,23 @@ vuongtest <- function(object1, object2, nested=FALSE, adj="none") {
   ## which has the larger log-likelihood.  From here on,
   ## object1 is the full model
   if(nested){
-      if(sum(llB) > sum(llA)){
+      if(sum(llB, na.rm = TRUE) > sum(llA, na.rm = TRUE)){
           tmp <- object1
           object1 <- object2
           object2 <- tmp
           tmp <- llA
           llA <- llB
           llB <- tmp
+          tmp <- callA
+          callA <- callB
+          callB <- tmp
       }
   }
 
   ## Eq (4.2)
-  n <- NROW(llA)
-  omega.hat.2 <- (n-1)/n * var(llA - llB)
+  nmis <- sum(is.na(llA)) # (missing all data)
+  n <- NROW(llA) - nmis
+  omega.hat.2 <- (n-1)/n * var(llA - llB, na.rm = TRUE)
 
   ## Get p-value of weighted chi-square dist
   lamstar <- calcLambda(object1, object2, n)
@@ -115,18 +120,27 @@ vuongtest <- function(object1, object2, nested=FALSE, adj="none") {
   pOmega <- imhof(n * omega.hat.2, lamstar^2)$Qq
 
   ## Calculate and test LRT; Eq (6.4)
-  lr <- sum(llA - llB)
+  lr <- sum(llA - llB, na.rm = TRUE)
   teststat <- (1/sqrt(n)) * lr/sqrt(omega.hat.2)
 
   ## Adjustments to test statistics
   ## FIXME lavaan equality constraints; use df instead?
+  if(classA %in% c("SingleGroupClass", "MultipleGroupClass")){
+    nparA <- mirt::extract.mirt(object1, "nest")
+  } else {
+    nparA <- length(coef(object1))
+  }
+  if(classB %in% c("SingleGroupClass", "MultipleGroupClass")){
+    nparB <- mirt::extract.mirt(object2, "nest")
+  } else {
+    nparB <- length(coef(object2))
+  }
+  
   if(adj=="aic"){
-    teststat <- teststat - (length(coef(object1)) -
-                              length(coef(object2)))
+    teststat <- teststat - (nparA - nparB)
   }
   if(adj=="bic"){
-    teststat <- teststat -
-      (length(coef(object1)) - length(coef(object2))) * log(n)/2
+    teststat <- teststat - (nparA - nparB) * log(n)/2
   }
 
   ## Null distribution and test stat depend on nested
@@ -168,10 +182,10 @@ vuongtest <- function(object1, object2, nested=FALSE, adj="none") {
 ################################################################
 calcAB <- function(object, n){
   ## Eq (2.1)
-  if(class(object) == "lavaan"){
+  if(class(object)[1] == "lavaan"){
     tmpvc <- vcov(object)
     dups <- duplicated(colnames(tmpvc))
-    tmpvc <- tmpvc[!dups,!dups]
+    tmpvc <- n * tmpvc[!dups,!dups]
     ## to throw error if complex constraints
     ## (NB we should eventually just use this instead of dups)
     if(nrow(object@Model@ceq.JAC) > 0){
@@ -182,14 +196,28 @@ calcAB <- function(object, n){
     #} else {
     #  A <- vcov(object)
     #}
+  } else if(class(object) %in% c("lm", "glm", "nls")){
+    scaling <- summary(object)$sigma
+    if(is.null(scaling)){
+      scaling <- 1
+    } else {
+      scaling <- scaling^2
+    }
+    tmpvc <- n * vcov(object)
   } else {
-    tmpvc <- vcov(object)
+    tmpvc <- n * vcov(object)
+    ## in case mirt vcov was not estimated
+    if(nrow(tmpvc) == 1 & is.na(tmpvc[1,1])) stop("Please re-estimate the mirt model with SE=TRUE")
   }
-  A <- chol2inv(chol(n * tmpvc))
+  A <- chol2inv(chol(tmpvc))
 
   ## Eq (2.2)
-  if(class(object) == "lavaan"){
+  if(class(object)[1] == "lavaan"){
     sc <- estfun(object, remove.duplicated=TRUE)
+  } else if (class(object)[1] %in% c("SingleGroupClass", "MultipleGroupClass")){
+    sc <- mirt::estfun.AllModelClass(object)
+  } else if(class(object) %in% c("lm", "glm", "nls")){
+    sc <- (1/scaling) * estfun(object)
   } else {
     sc <- estfun(object)
   }
@@ -264,7 +292,47 @@ print.vuongtest <- function(x, ...) {
   }
 }
 
+###################################################################
+## check objects prior to doing computations and possibly warn/stop
+## also return calls/classes
+###################################################################
+check.obj <- function(object1, object2) {
+  classA <- class(object1)[1L]
+  classB <- class(object2)[1L]
+  
+  if(isS4(object1)){
+    if(classA %in% c("SingleGroupClass", "MultipleGroupClass")){
+      callA <- object1@Call
+      ## recommended vcov type for mirt models:
+      if(object1@Options$SE.type != "Oakes") warning("SE.type='Oakes' is recommended for mirt models")
+    } else {
+      callA <- object1@call
+    }
+  } else {
+    callA <- object1$call
+  }
+  if(isS4(object2)){
+    if(classB %in% c("SingleGroupClass", "MultipleGroupClass")){
+      callB <- object2@Call
+      if(object2@Options$SE.type != "Oakes") warning("SE.type='Oakes' is recommended for mirt models")
+    } else {
+      callB <- object2@call
+    }
+  } else {
+    callB <- object2$call
+  }
+
+  if(class(object1) == "lavaan"){
+    if(lavInspect(object1, 'fixed.x')) stop("lavaan models with fixed.x are not currently supported")
+  }
+  if(class(object2) == "lavaan"){
+    if(lavInspect(object2, 'fixed.x')) stop("lavaan models with fixed.x are not currently supported")
+  }
+
+  list(classA = classA, classB = classB, callA = callA, callB = callB)
+}  
+  
 
 .onAttach <- function(...) {
-  packageStartupMessage("This is nonnest2 0.4\n nonnest2 has not been tested with all combinations of model classes.")
+  packageStartupMessage("This is nonnest2 0.5.\n nonnest2 has not been tested with all combinations of model classes.")
 }
