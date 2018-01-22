@@ -322,17 +322,11 @@ check.obj <- function(object1, object2) {
     callB <- object2$call
   }
 
-  if(class(object1) == "lavaan"){
-    if(lavInspect(object1, 'fixed.x')) stop("lavaan models with fixed.x are not currently supported")
-  }
-  if(class(object2) == "lavaan"){
-    if(lavInspect(object2, 'fixed.x')) stop("lavaan models with fixed.x are not currently supported")
-  }
-
   list(classA = classA, classB = classB, callA = callA, callB = callB)
 }  
   
 
 .onAttach <- function(...) {
-  packageStartupMessage("This is nonnest2 0.5.\n nonnest2 has not been tested with all combinations of model classes.")
+  version <- read.dcf(file=system.file("DESCRIPTION", package="nonnest2"), fields="Version")
+  packageStartupMessage(paste0("This is nonnest2 ", version, ".\nnonnest2 has not been tested with all combinations of model classes."))
 }
