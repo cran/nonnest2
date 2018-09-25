@@ -4,7 +4,9 @@
 \alias{vuongtest}
 \title{Vuong Tests for Model Comparison}
 \usage{
-vuongtest(object1, object2, nested = FALSE, adj = "none")
+vuongtest(object1, object2, nested = FALSE, adj = "none",
+  ll1 = llcont, ll2 = llcont, score1 = NULL, score2 = NULL,
+  vc1 = vcov, vc2 = vcov)
 }
 \arguments{
 \item{object1}{a model object}
@@ -14,6 +16,18 @@ vuongtest(object1, object2, nested = FALSE, adj = "none")
 \item{nested}{if \code{TRUE}, models are assumed to be nested}
 
 \item{adj}{Should an adjusted test statistic be calculated?  Defaults to \dQuote{none}, with possible adjustments being \dQuote{aic} and \dQuote{bic}}
+
+\item{ll1}{an optional function for computing log-likelihood contributions of object1}
+
+\item{ll2}{an optional function for computing log-likelihood contributions of object2}
+
+\item{score1}{an optional function for computing scores of object 1}
+
+\item{score2}{an optional function for computing scores of object 2}
+
+\item{vc1}{an optional function for computing the asymptotic covariance matrix of the object1 parameters}
+
+\item{vc2}{an optional function for computing the asymptotic covariance matrix of the object2 parameters}
 }
 \value{
 an object of class \code{vuongtest} containing test results.
@@ -75,6 +89,17 @@ HS.model <- 'visual  =~ x1 + x2 + x3
 fit1 <- cfa(HS.model, data=HolzingerSwineford1939)
 fit2 <- cfa(HS.model, data=HolzingerSwineford1939, group="school")
 vuongtest(fit1, fit2)
+
+## Supplying custom vcov function
+require(lme4)
+require(merDeriv)
+
+fm1 <- lmer(Reaction ~ Days + (Days | Subject), sleepstudy, REML=FALSE)
+fm2 <- lmer(Reaction ~ Days + (Days || Subject), sleepstudy, REML=FALSE)
+
+vcl <- function(obj) vcov(obj, full=TRUE)
+vuongtest(fm1, fm2, vc1=vcl, vc2=vcl, nested=TRUE)
+
 }
 
 }

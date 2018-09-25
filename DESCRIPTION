@@ -1,7 +1,7 @@
 Package: nonnest2
 Title: Tests of Non-Nested Models
-Version: 0.5-1
-Date: 2018-01-22
+Version: 0.5-2
+Date: 2018-08-25
 Authors@R: c(person(given = "Edgar", family = "Merkle",
                     role = c("aut","cre"), email = "merklee@missouri.edu"),
              person(given = "Dongjun", family = "You", role = "aut"),
@@ -17,15 +17,16 @@ Depends: R (>= 3.0.0)
 Imports: CompQuadForm, mvtnorm, lavaan (>= 0.5-23.1097), sandwich
 License: GPL-2 | GPL-3
 LazyData: yes
-Suggests: knitr, mirt (>= 1.26.3), testthat
+Suggests: mirt (>= 1.26.3), AER, MASS, faraway, mlogit, ordinal, pscl,
+        knitr, testthat
 VignetteBuilder: knitr
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
 NeedsCompilation: no
-Packaged: 2018-01-22 17:54:34 UTC; merkle
+Packaged: 2018-09-25 19:44:12 UTC; merkle
 Author: Edgar Merkle [aut, cre],
   Dongjun You [aut],
   Lennart Schneider [ctb],
   Seongho Bae [ctb]
 Maintainer: Edgar Merkle <merklee@missouri.edu>
 Repository: CRAN
-Date/Publication: 2018-01-22 23:30:30 UTC
+Date/Publication: 2018-09-25 22:50:03 UTC
