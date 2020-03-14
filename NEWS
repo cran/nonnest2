@@ -1,3 +1,17 @@
+Changes in Version 0.5-3
+    o simplify llcont() for mlogit models (credit to Yves Croissant)
+
+    o fix for AIC/BIC adjustments to test statistics (credit to Thomas Hielscher)
+
+    o handle sampling weights for mirt models, throw error for lavaan sampling weights
+
+Changes in Version 0.5-2
+    o new vuongtest() arguments ll1, ll2, score1, score2, vc1, vc2 for
+      sending in custom functions that obtain casewise log-likelihood,
+      scores, and vcovs from fitted models
+
+    o add packages to Suggests, fix a failing test
+
 Changes in Version 0.5-1
     o llcont() for lavaan objects with fixed.x=TRUE is corrected
 
