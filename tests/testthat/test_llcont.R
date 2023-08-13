@@ -343,6 +343,27 @@ test_that("rlm object", {
 })
 
 
+test_that("OpenMx object", {
+  if (isTRUE(require("OpenMx")) & isTRUE(require("tidySEM"))) {
+    
+    res <- mx_lca(data = data_mix_ordinal, classes = 1:2, run = FALSE)
+    
+    res[[1]]$fitfunction$rowDiagnostics <- TRUE
+    
+    res[[2]]$class1$fitfunction$rowDiagnostics <- TRUE
+    res[[2]]$class2$fitfunction$rowDiagnostics <- TRUE
+    
+    res[[1]] <- mxTryHardOrdinal(res[[1]])
+    res[[2]] <- mxTryHardOrdinal(res[[2]])
+    
+    expect_equal(sum(llcont(res[[1]])), as.numeric(logLik(res[[1]])))
+    expect_equal(sum(llcont(res[[2]])), as.numeric(logLik(res[[2]])))
+  }
+})
+
+
+
+
 # test_that("SingleGroupClass", {
 #   if (isTRUE(require("mirt"))) {
 #     data <- expand.table(LSAT7)
