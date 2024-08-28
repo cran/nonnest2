@@ -87,13 +87,14 @@
 #'
 #' vcl <- function(obj) vcov(obj, full=TRUE)
 #' vuongtest(fm1, fm2, vc1=vcl, vc2=vcl, nested=TRUE)
-#' 
+#'
 #' }
 #'
 #' @importFrom sandwich estfun
 #' @importFrom CompQuadForm imhof
 #' @importFrom stats coef pnorm var vcov
 #' @importMethodsFrom lavaan coef fitted logLik vcov
+#' @importFrom methods slotNames
 #' @export
 vuongtest <- function(object1, object2, nested=FALSE, adj="none", ll1=llcont, ll2=llcont, score1=NULL, score2=NULL, vc1=vcov, vc2=vcov) {
 
@@ -101,7 +102,7 @@ vuongtest <- function(object1, object2, nested=FALSE, adj="none", ll1=llcont, ll
   obinfo <- check.obj(object1, object2)
   callA <- obinfo$callA; classA <- obinfo$classA
   callB <- obinfo$callB; classB <- obinfo$classB
-    
+
   llA <- ll1(object1)
   llB <- ll2(object2)
 
@@ -151,7 +152,7 @@ vuongtest <- function(object1, object2, nested=FALSE, adj="none", ll1=llcont, ll
   } else {
     nparB <- length(coef(object2))
   }
-  
+
   if(adj=="aic"){
     lr <- lr - (nparA - nparB)
   }
@@ -234,7 +235,7 @@ calcAB <- function(object, n, scfun, vc){
     sc <- scfun(object)
   } else if(class(object)[1] == "lavaan"){
     sc <- estfun(object, remove.duplicated=TRUE)
-  } else if(class(object)[1] %in% c("SingleGroupClass", "MultipleGroupClass")){
+  } else if(class(object)[1] %in% c("SingleGroupClass", "MultipleGroupClass", "DiscreteClass")){
     wts <- mirt::extract.mirt(object, "survey.weights")
     if(length(wts) > 0){
       sc <- mirt::estfun.AllModelClass(object, weights = sqrt(wts))
@@ -324,18 +325,20 @@ print.vuongtest <- function(x, ...) {
 check.obj <- function(object1, object2) {
   classA <- class(object1)[1L]
   classB <- class(object2)[1L]
-  
+
   if(isS4(object1)){
-    if(classA %in% c("SingleGroupClass", "MultipleGroupClass")){
+    if(classA %in% c("SingleGroupClass", "MultipleGroupClass", "DiscreteClass")){
       callA <- object1@Call
       ## recommended vcov type for mirt models:
       if(object1@Options$SE.type != "Oakes") warning("SE.type='Oakes' is recommended for mirt models")
-    } 
-      if (classA %in% c("MxRAMModel" , "MxModel")){
+    } else if(classA %in% c("MxRAMModel" , "MxModel")){
       callA <- object1@name
-    }
-    else {
-      callA <- object1@call
+    } else {
+      if ("call" %in% slotNames(object1)) {
+        callA <- object1@call
+      } else {
+        stop("cannot find call information about object1")
+      }
     }
     if(classA == "lavaan"){
       if(length(object1@Data@weights[[1]]) > 0){
@@ -346,15 +349,17 @@ check.obj <- function(object1, object2) {
     callA <- object1$call
   }
   if(isS4(object2)){
-    if(classB %in% c("SingleGroupClass", "MultipleGroupClass")){
+    if(classB %in% c("SingleGroupClass", "MultipleGroupClass", "DiscreteClass")){
       callB <- object2@Call
       if(object2@Options$SE.type != "Oakes") warning("SE.type='Oakes' is recommended for mirt models")
-    } 
-      if (classB %in% c("MxRAMModel" , "MxModel") ){
+    } else if(classB %in% c("MxRAMModel" , "MxModel") ){
       callB <- object2@name
-    }
-    else {
-      callB <- object2@call
+    } else {
+      if ("call" %in% slotNames(object2)) {
+        callB <- object2@call
+      } else {
+        stop("cannot find call information about object2")
+      }
     }
     if(classB == "lavaan"){
       if(length(object2@Data@weights[[1]]) > 0){
@@ -366,8 +371,8 @@ check.obj <- function(object1, object2) {
   }
 
   list(classA = classA, classB = classB, callA = callA, callB = callB)
-}  
-  
+}
+
 
 .onAttach <- function(...) {
   version <- read.dcf(file=system.file("DESCRIPTION", package="nonnest2"), fields="Version")
