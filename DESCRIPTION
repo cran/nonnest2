@@ -1,7 +1,7 @@
 Package: nonnest2
 Title: Tests of Non-Nested Models
-Version: 0.5-8
-Date: 2024-08-28
+Version: 0.5-9
+Date: 2026-03-31
 Authors@R: c(person(given = "Edgar", family = "Merkle",
                     role = c("aut","cre"), email = "merklee@missouri.edu"),
              person(given = "Dongjun", family = "You", role = "aut"),
@@ -22,10 +22,10 @@ Suggests: mirt (>= 1.42), OpenMx, tidySEM, AER, MASS, faraway, mlogit,
         ordinal, pscl, knitr, rmarkdown, testthat
 URL: https://github.com/qpsy/nonnest2
 VignetteBuilder: knitr
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Encoding: UTF-8
 NeedsCompilation: no
-Packaged: 2024-08-28 13:33:17 UTC; merkle
+Packaged: 2026-03-31 17:38:42 UTC; merkle
 Author: Edgar Merkle [aut, cre],
   Dongjun You [aut],
   Lennart Schneider [ctb],
@@ -34,4 +34,4 @@ Author: Edgar Merkle [aut, cre],
   Phil Chalmers [ctb]
 Maintainer: Edgar Merkle <merklee@missouri.edu>
 Repository: CRAN
-Date/Publication: 2024-08-28 17:10:02 UTC
+Date/Publication: 2026-04-01 05:10:26 UTC

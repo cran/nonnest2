@@ -141,14 +141,17 @@ vuongtest <- function(object1, object2, nested=FALSE, adj="none", ll1=llcont, ll
   lr <- sum(llA - llB, na.rm = TRUE)
 
   ## Adjustments to likelihood ratio
-  ## FIXME lavaan equality constraints; use df instead?
-  if(classA %in% c("SingleGroupClass", "MultipleGroupClass")){
+  if(classA %in% c("SingleGroupClass", "MultipleGroupClass", "DiscreteClass")){
     nparA <- mirt::extract.mirt(object1, "nest")
+  } else if(classA == "lavaan"){
+    nparA <- attr(logLik(object1), "df")
   } else {
     nparA <- length(coef(object1))
   }
-  if(classB %in% c("SingleGroupClass", "MultipleGroupClass")){
+  if(classB %in% c("SingleGroupClass", "MultipleGroupClass", "DiscreteClass")){
     nparB <- mirt::extract.mirt(object2, "nest")
+  } else if(classB == "lavaan"){
+    nparB <- attr(logLik(object2), "df")
   } else {
     nparB <- length(coef(object2))
   }

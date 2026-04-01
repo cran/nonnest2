@@ -9,11 +9,11 @@ library("lavaan")
 library("nonnest2")
 
 ## ----eval=FALSE---------------------------------------------------------------
-#  install.packages("nonnest2")
-#  
-#  # to install the development version, run
-#  # library(devtools)
-#  # install_github("qpsy/nonnest2")
+# install.packages("nonnest2")
+# 
+# # to install the development version, run
+# # library(devtools)
+# # install_github("qpsy/nonnest2")
 
 ## -----------------------------------------------------------------------------
 m1 <- ' visual  =~ x1 + x2 + x3 + x4

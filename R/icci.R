@@ -78,7 +78,7 @@ icci <- function(object1, object2, conf.level=.95, ll1=llcont, ll2=llcont) {
   n <- length(llA) - nmis
   omega.hat.2 <- (n-1)/n * var(llA - llB, na.rm = TRUE)
 
-  if(classA %in% c("SingleGroupClass", "MultipleGroupClass")){
+  if(classA %in% c("SingleGroupClass", "MultipleGroupClass", "DiscreteClass")){
     bicA <- mirt::extract.mirt(object1, "BIC")
     aicA <- mirt::extract.mirt(object1, "AIC")
   } else {
@@ -88,7 +88,7 @@ icci <- function(object1, object2, conf.level=.95, ll1=llcont, ll2=llcont) {
     aicA <- AIC(object1)
   }
 
-  if(classB %in% c("SingleGroupClass", "MultipleGroupClass")){
+  if(classB %in% c("SingleGroupClass", "MultipleGroupClass", "DiscreteClass")){
     bicB <- mirt::extract.mirt(object2, "BIC")
     aicB <- mirt::extract.mirt(object2, "AIC")
   } else {
